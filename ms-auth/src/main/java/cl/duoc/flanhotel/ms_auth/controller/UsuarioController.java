@@ -1,28 +1,31 @@
 package cl.duoc.flanhotel.ms_auth.controller;
 
+import cl.duoc.flanhotel.ms_auth.dto.UsuarioDTO;
 import cl.duoc.flanhotel.ms_auth.entidad.Usuario;
 import cl.duoc.flanhotel.ms_auth.service.UsuarioService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController // Le dice a Spring que esta es la puerta para recibir datos de internet
-@RequestMapping("/api/usuarios") // La URL base será: http://localhost:8081/api/usuarios
+@RestController
+@RequestMapping("/api/usuarios")
 public class UsuarioController {
 
     @Autowired
-    private UsuarioService usuarioService; // Llamamos al cerebro que creamos antes
+    private UsuarioService usuarioService;
 
-    // Endpoint 1: Crear un nuevo usuario (POST)
+    // Endpoint 1: Crear un nuevo usuario (POST) con DTO y Validaciones
     @PostMapping("/registrar")
-    public ResponseEntity<Usuario> registrar(@RequestBody Usuario usuario) {
-        Usuario nuevoUsuario = usuarioService.registrarUsuario(usuario);
+    public ResponseEntity<Usuario> registrarUsuario(@Valid @RequestBody UsuarioDTO usuarioDTO) {
+        // Fíjate que aquí adentro ahora le pasamos el usuarioDTO al service (ya no está gris)
+        Usuario nuevoUsuario = usuarioService.registrarUsuario(usuarioDTO);
         return ResponseEntity.ok(nuevoUsuario);
     }
 
-    // Endpoint 2: Ver todos los usuarios (GET)
+    // Endpoint 2: Listar usuarios (GET)
     @GetMapping("/listar")
     public ResponseEntity<List<Usuario>> listar() {
         return ResponseEntity.ok(usuarioService.listarTodos());

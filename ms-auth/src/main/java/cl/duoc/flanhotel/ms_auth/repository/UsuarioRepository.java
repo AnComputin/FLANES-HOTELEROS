@@ -9,7 +9,6 @@ import java.util.Optional;
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
-    // Spring Boot es tan inteligente que con solo escribir este nombre,
-    // él sabrá cómo buscar un usuario por su username en la base de datos.
+    // Este nombre de método es el que el Service busca para que no de error
     Optional<Usuario> findByUsername(String username);
 }
