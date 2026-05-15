@@ -8,7 +8,7 @@
 		<version>4.0.6</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>grupo.flanes.hotel</groupId>
+	<groupId>cl.duoc.flanhotel</groupId>
 	<artifactId>ms-reserva</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name/>
@@ -50,10 +50,6 @@
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-mysql</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
