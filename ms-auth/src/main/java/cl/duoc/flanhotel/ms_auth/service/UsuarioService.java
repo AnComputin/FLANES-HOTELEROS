@@ -46,4 +46,11 @@ public class UsuarioService {
     public void eliminarUsuario(Long id) {
         usuarioRepository.deleteById(id);
     }
+
+    public boolean validarUsuario(String username, String password) {
+        // Buscamos al usuario por su username
+        return usuarioRepository.findByUsername(username)
+                .map(user -> user.getPassword().equals(password)) // Comparamos clave
+                .orElse(false); // Si no existe, devolvemos falso
+    }
 }
