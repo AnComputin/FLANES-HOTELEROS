@@ -52,4 +52,10 @@ public class ReservaController {
         reservaService.eliminarReserva(id);
         return ResponseEntity.ok("Reserva eliminada exitosamente con el ID: " + id);
     }
+    @GetMapping("/habitacion/{id}")
+    public ResponseEntity<List<Reserva>> obtenerReservasPorHabitacion(@PathVariable Long id) {
+        log.info("Controlador: Petición de ms-habitacion para buscar reservas de la habitación ID: {}", id);
+        List<Reserva> lista = reservaService.listarPorHabitacionId(id);
+        return ResponseEntity.ok(lista);
+    }
 }

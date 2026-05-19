@@ -19,4 +19,5 @@ public class HabitacionDTO {
     private Integer precioNoche;
 
     private String estado = "Disponible"; // Valor por defecto
+
 }

@@ -1,6 +1,7 @@
 package cl.duoc.flanhotel.ms_auth.controller;
 
 import cl.duoc.flanhotel.ms_auth.dto.LoginRequest;
+import cl.duoc.flanhotel.ms_auth.dto.OnAdminRegister;
 import cl.duoc.flanhotel.ms_auth.dto.UsuarioDTO;
 import cl.duoc.flanhotel.ms_auth.entidad.Usuario;
 import cl.duoc.flanhotel.ms_auth.security.JwtUtil;
@@ -24,11 +25,19 @@ public class UsuarioController {
     private UsuarioService usuarioService;
 
     // Endpoint 1: Crear un nuevo usuario (POST) con DTO y Validaciones
+    // 1. REGISTRO PÚBLICO (Para Clientes)
     @PostMapping("/registrar")
     public ResponseEntity<Usuario> registrarUsuario(@Valid @RequestBody UsuarioDTO usuarioDTO) {
-        // Fíjate que aquí adentro ahora le pasamos el usuarioDTO al service (ya no está gris)
-        Usuario nuevoUsuario = usuarioService.registrarUsuario(usuarioDTO);
-        return ResponseEntity.ok(nuevoUsuario);
+        Usuario nuevoCliente = usuarioService.registrarCliente(usuarioDTO);
+        return ResponseEntity.ok(nuevoCliente);
+    }
+    //2. REGISTRO PARA ADMINS
+    @PostMapping("/registrar-admin")
+    public ResponseEntity<Usuario> registrarAdmin(
+            @org.springframework.validation.annotation.Validated(OnAdminRegister.class) @RequestBody UsuarioDTO usuarioDTO
+    ) {
+        Usuario nuevoAdmin = usuarioService.registrarAdmin(usuarioDTO);
+        return ResponseEntity.ok(nuevoAdmin);
     }
 
     // Endpoint 2: Listar usuarios (GET)

@@ -19,5 +19,9 @@ public class UsuarioDTO {
     @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
     private String password;
 
+    @NotBlank(message = "El rol es obligatorio para registrar un administrador", groups = OnAdminRegister.class)
     private String rol;
+
+
+
 }

@@ -18,15 +18,26 @@ public class UsuarioService {
     private UsuarioRepository usuarioRepository;
 
     // Metodo 1: REGISTRAR (Usando tus campos reales)
-    public Usuario registrarUsuario(UsuarioDTO dto) {
-        log.info("Procesando registro para: {}", dto.getUsername());
-
+    public Usuario registrarCliente(UsuarioDTO dto) {
         Usuario usuario = new Usuario();
-        // Mapeamos solo lo que tú ya tienes definido
+        usuario.setUsername(dto.getUsername());
+        usuario.setEmail(dto.getEmail());
+        // Recuerda usar tu encriptor de claves si lo tienes inyectado (ej: passwordEncoder.encode)
+        usuario.setPassword(dto.getPassword());
+
+        // 🔥 Forzamos que en la BD se guarde siempre como CLIENTE
+        usuario.setRol("CLIENTE");
+
+        return usuarioRepository.save(usuario);
+    }
+    public Usuario registrarAdmin(UsuarioDTO dto) {
+        Usuario usuario = new Usuario();
         usuario.setUsername(dto.getUsername());
         usuario.setEmail(dto.getEmail());
         usuario.setPassword(dto.getPassword());
-        usuario.setRol(dto.getRol() != null ? dto.getRol() : "USER");
+
+        // 💼 Aquí sí respetamos el rol que manden desde Postman (ADMIN, RECEPCIONISTA, etc.)
+        usuario.setRol(dto.getRol());
 
         return usuarioRepository.save(usuario);
     }

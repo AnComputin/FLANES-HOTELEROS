@@ -17,7 +17,7 @@ public class ReservaService {
     private ReservaRepository reservaRepository;
 
     public Reserva crearReserva(ReservaDTO dto) {
-        log.info("Iniciando proceso para crear una reserva para el cliente ID: {}", dto.getIdCliente());
+        log.info("Iniciando proceso para crear una reserva para el cliente: {}", dto.getNombreCliente());
 
         // Mapeo: Pasamos los datos del DTO (mensajero) a la Entidad (base de datos)
         Reserva reserva = new Reserva();
@@ -25,11 +25,16 @@ public class ReservaService {
         reserva.setIdHabitacion(dto.getIdHabitacion());
         reserva.setFechaInicio(dto.getFechaInicio());
         reserva.setFechaFin(dto.getFechaFin());
-        reserva.setEstado("PENDIENTE");
+
+        // 1. 🔥 Cambiamos de "PENDIENTE" a "ACTIVA" para que afecte de inmediato la disponibilidad
+        reserva.setEstado("ACTIVA");
+
+        // 2. 🔥 Guardamos el nombre que viene desde el JSON de Postman
+        reserva.setNombreCliente(dto.getNombreCliente());
 
         Reserva guardada = reservaRepository.save(reserva);
 
-        log.info("Reserva guardada exitosamente con ID: {}", guardada.getId());
+        log.info("Reserva guardada exitosamente con ID: {} para el cliente: {}", guardada.getId(), guardada.getNombreCliente());
         return guardada;
     }
 
@@ -62,5 +67,10 @@ public class ReservaService {
 
         // 2. Ejecuta la orden de borrado en la base de datos (DELETE FROM reservas WHERE id = ...).
         reservaRepository.deleteById(id);
+    }
+    public List<Reserva> listarPorHabitacionId(Long idHabitacion) {
+        log.info("Servicio: Buscando reservas asociadas a la habitación ID: {}", idHabitacion);
+        // Aquí llamamos al método corregido del repositorio
+        return reservaRepository.findByIdHabitacion(idHabitacion);
     }
 }
