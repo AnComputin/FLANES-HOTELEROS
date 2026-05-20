@@ -18,4 +18,8 @@ public interface ReservaClient {
 
     @GetMapping("/api/reservas/listar")
     List<ReservaDTO> listarTodasLasReservas();
+    @GetMapping("/api/reservas/activas")
+    List<ReservaDTO> listarReservasActivas();
+    @GetMapping("/ocupadas")
+    List<Long> obtenerIdsHabitacionesOcupadas();
 }

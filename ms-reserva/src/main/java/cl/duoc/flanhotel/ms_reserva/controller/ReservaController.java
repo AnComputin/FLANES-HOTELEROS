@@ -37,14 +37,6 @@ public class ReservaController {
         return ResponseEntity.ok(lista); // Equivalente a un 200 OK
     }
 
-    // Actualizar estado de una reserva
-    @PutMapping("/actualizar/{id}")
-    public ResponseEntity<Reserva> actualizar(@PathVariable Long id, @RequestParam String nuevoEstado) {
-        log.info("Controlador: Petición para actualizar estado de la reserva ID: {}", id);
-        Reserva actualizada = reservaService.actualizarEstado(id, nuevoEstado);
-        return ResponseEntity.ok(actualizada);
-    }
-
     // Eliminar una reserva
     @DeleteMapping("/eliminar/{id}")
     public ResponseEntity<String> eliminar(@PathVariable Long id) {
@@ -57,5 +49,48 @@ public class ReservaController {
         log.info("Controlador: Petición de ms-habitacion para buscar reservas de la habitación ID: {}", id);
         List<Reserva> lista = reservaService.listarPorHabitacionId(id);
         return ResponseEntity.ok(lista);
+    }
+    @GetMapping("/activas")
+    public ResponseEntity<List<Reserva>> obtenerReservasActivas() {
+        List<Reserva> activas = reservaService.listarReservasActivas();
+        return ResponseEntity.ok(activas);
+    }
+    // En ReservaController.java
+    @PutMapping("/cancelar/{id}")
+    public ResponseEntity<Reserva> cancelarReserva(@PathVariable Long id) {
+        Reserva reservaCancelada = reservaService.cancelarReserva(id);
+        return ResponseEntity.ok(reservaCancelada);
+    }
+    // Agrega esto al final de tu ReservaController.java
+
+    @org.springframework.web.bind.annotation.ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public org.springframework.http.ResponseEntity<java.util.Map<String, String>> manejarErrorTraslape(org.springframework.web.server.ResponseStatusException ex) {
+
+        java.util.Map<String, String> respuestaPersonalizada = new java.util.HashMap<>();
+
+        // Extraemos el mensaje ("La habitación ya se encuentra reservada..." o "No puedes realizar una reserva...")
+        respuestaPersonalizada.put("mensaje", ex.getReason());
+
+        // 🔥 Cambiamos "OCUPADA" por algo más genérico para que sirva para cualquier error
+        respuestaPersonalizada.put("estado", "ERROR_DE_VALIDACION");
+
+        return org.springframework.http.ResponseEntity.ok(respuestaPersonalizada);
+    }
+    @org.springframework.web.bind.annotation.ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public org.springframework.http.ResponseEntity<java.util.Map<String, String>> manejarErrorFormatoJson(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+
+        java.util.Map<String, String> respuestaPersonalizada = new java.util.HashMap<>();
+
+        // Personalizamos el mensaje para indicarle al usuario que el tipo de dato es incorrecto
+        respuestaPersonalizada.put("mensaje", "Los campos vacios deben ser rellenados con datos válidos.");
+        respuestaPersonalizada.put("estado", "ERROR_DE_VALIDACION");
+
+        return org.springframework.http.ResponseEntity.badRequest().body(respuestaPersonalizada);
+    }
+    @PutMapping("/checkout/{id}")
+    public ResponseEntity<cl.duoc.flanhotel.ms_reserva.entidad.Reserva> realizarCheckOut(@PathVariable Long id) {
+        log.info("Controlador: Recibiendo petición de Check-Out para la reserva ID: {}", id);
+        cl.duoc.flanhotel.ms_reserva.entidad.Reserva reservaFinalizada = reservaService.procesarCheckOut(id);
+        return ResponseEntity.ok(reservaFinalizada);
     }
 }

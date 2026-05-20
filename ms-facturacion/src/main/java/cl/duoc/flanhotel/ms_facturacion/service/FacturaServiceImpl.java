@@ -1,27 +1,45 @@
 package cl.duoc.flanhotel.ms_facturacion.service;
 
+import cl.duoc.flanhotel.ms_facturacion.config.ReservaClient;
 import cl.duoc.flanhotel.ms_facturacion.entity.Factura;
 import cl.duoc.flanhotel.ms_facturacion.exception.FacturaNotFoundException;
 import cl.duoc.flanhotel.ms_facturacion.repository.FacturaRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.util.List;
 
 @Service
 public class FacturaServiceImpl implements FacturaService {
 
-    private final FacturaRepository facturaRepository;
+    @Autowired
+    private FacturaRepository facturaRepository;
 
-    public FacturaServiceImpl(FacturaRepository facturaRepository) {
-        this.facturaRepository = facturaRepository;
-    }
+    @Autowired
+    private ReservaClient reservaClient; // 👈 Inyección limpia sin usar constructores
 
     @Override
     public Factura crearFactura(Factura factura) {
+        // 🔥 VALIDACIÓN: Detener el proceso si la reserva no existe en tu ms_reserva
+        try {
+            reservaClient.obtenerReservaPorId(factura.getIdReserva());
+        } catch (Exception e) {
+            // Si el cliente Feign falla (porque tu microservicio tira 404), frena el POST de inmediato
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Error: No se puede generar la factura porque la Reserva ID " + factura.getIdReserva() + " no existe."
+            );
+        }
+
+        // Lógica original de tu compañera
         if (factura.getEstadoPago() == null) {
             factura.setEstadoPago("PENDIENTE");
         }
         return facturaRepository.save(factura);
     }
+
 
     @Override
     public List<Factura> obtenerTodas() {
@@ -53,4 +71,5 @@ public class FacturaServiceImpl implements FacturaService {
         factura.setEstadoPago(nuevoEstado.toUpperCase());
         return facturaRepository.save(factura);
     }
+
 }

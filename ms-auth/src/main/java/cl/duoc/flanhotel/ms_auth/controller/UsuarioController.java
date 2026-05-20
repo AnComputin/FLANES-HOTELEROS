@@ -67,4 +67,9 @@ public class UsuarioController {
             return ResponseEntity.status(401).body("Usuario o contraseña incorrectos");
         }
     }
+    @GetMapping("/{id}")
+    public ResponseEntity<Usuario> buscarPorId(@PathVariable Long id) {
+        Usuario usuario = usuarioService.buscarPorId(id); // Asegúrate de que tu servicio tenga este método
+        return ResponseEntity.ok(usuario);
+    }
 }

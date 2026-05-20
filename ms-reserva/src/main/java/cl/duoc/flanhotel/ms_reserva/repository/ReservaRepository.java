@@ -12,4 +12,5 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     List<Reserva> findByIdHabitacion(Long idHabitacion);
 
     List<Reserva> findByEstado(String estado); // Buscar reservas con estado "ACTIVA"
+    List<Reserva> findByIdHabitacionAndEstado(Long idHabitacion, String estado);
 }

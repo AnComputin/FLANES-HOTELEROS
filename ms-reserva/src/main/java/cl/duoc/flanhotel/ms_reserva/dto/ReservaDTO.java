@@ -12,7 +12,7 @@ public class ReservaDTO {
     private long id; // sin validacion pq mysql lo crea
 
 
-    @NotNull(message = "El ID del cleinte ess obligatorio")
+    @NotNull(message = "El ID del cliente es obligatorio")
     private Long idCliente;
 
     @NotNull(message = "El ID de la habitacion es obligatorio")
@@ -27,5 +27,6 @@ public class ReservaDTO {
 
     private String estado;
     private String nombreCliente;
+    private String nombreQuienReserva;
 
 }

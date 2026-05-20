@@ -23,13 +23,19 @@ public class HabitacionService {
     private ReservaClient reservaClient;
 
     public Habitacion crearHabitacion(HabitacionDTO dto) {
-        log.info("Iniciando proceso para crear la habitación número: {}", dto.getNumero()); // <-- Log de info
-
         Habitacion habitacion = new Habitacion();
         habitacion.setNumero(dto.getNumero());
         habitacion.setTipo(dto.getTipo());
         habitacion.setPrecioNoche(dto.getPrecioNoche());
         habitacion.setEstado(dto.getEstado());
+        if (habitacionRepository.existsByNumero(habitacion.getNumero())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Ya existe una habitación con el número " + habitacion.getNumero() + ". El número debe ser distinto."
+            );
+        }
+        log.info("Iniciando proceso para crear la habitación número: {}", dto.getNumero()); // <-- Log de info
+
 
         Habitacion guardada = habitacionRepository.save(habitacion);
         log.info("Habitación guardada exitosamente con ID: {}", guardada.getId()); // <-- Log de éxito
@@ -60,43 +66,47 @@ public class HabitacionService {
         // 1. Buscas todas tus habitaciones en la BD
         List<Habitacion> todas = habitacionRepository.findAll();
 
-        // 2. Le pides las reservas al servicio de tu compañera usando Feign
+        // 2. Le pides las reservas al servicio de tu compañera
         List<ReservaDTO> reservas = reservaClient.listarTodasLasReservas();
 
-        // 3. Sacas la lista de IDs de habitaciones que están ocupadas hoy
+        // 3. 🔥 FILTRO ULTRA SEGURO: Sacamos los IDs de habitaciones realmente ocupadas hoy
         List<Long> idsOcupados = reservas.stream()
+                .filter(r -> r != null && r.getIdHabitacion() != null && "ACTIVA".equalsIgnoreCase(r.getEstado()))
                 .map(ReservaDTO::getIdHabitacion)
                 .toList();
 
-        // 4. Filtras tu lista: te quedas solo con las que NO están en la lista de ocupadas
-        return todas.stream()
+        // 4. Filtras tu lista: te quedas solo con las que NO están ocupadas
+        List<Habitacion> disponibles = todas.stream()
                 .filter(h -> !idsOcupados.contains(h.getId()))
                 .toList();
+
+        // 🔥 TRUCO DE ORO: Nos aseguramos de que el JSON que va a Postman
+        // cambie el string del atributo a "DISPONIBLE" para que no muestre el dato viejo de la BD
+        for (Habitacion hab : disponibles) {
+            hab.setEstado("DISPONIBLE");
+        }
+
+        return disponibles;
     }
+
     public List<Habitacion> listarHabitacionesOcupadas() {
-        // 1. Le pedimos todas las reservas al servicio de tu compañera mediante OpenFeign
         List<ReservaDTO> reservas = reservaClient.listarTodasLasReservas();
 
-        // 2. Extraemos una lista limpia con solo los IDs de las habitaciones que están ocupadas
+        // 🔥 Filtrar solo las activas
         List<Long> idsOcupados = reservas.stream()
+                .filter(r -> "ACTIVA".equalsIgnoreCase(r.getEstado()))
                 .map(ReservaDTO::getIdHabitacion)
-                .distinct() // Evita duplicados si una habitación tiene varias reservas
+                .distinct()
                 .toList();
 
-        // 3. Si no hay ninguna reserva en todo el hotel, devolvemos una lista vacía de inmediato
         if (idsOcupados.isEmpty()) {
             return List.of();
         }
 
-        // 1. Buscamos las habitaciones en la BD y las guardamos en la lista "ocupadas"
         List<Habitacion> ocupadas = habitacionRepository.findAllById(idsOcupados);
-
-        // 2. Recorremos esa lista para cambiar el estado "en el aire"
         for (Habitacion hab : ocupadas) {
             hab.setEstado("OCUPADA");
         }
-
-        // 3. RETORNAMOS la lista ya modificada (Y NADA MÁS ABAJO)
         return ocupadas;
     }
 
@@ -104,17 +114,18 @@ public class HabitacionService {
         // 1. Traemos todas las habitaciones de nuestra base de datos
         List<Habitacion> habitaciones = habitacionRepository.findAll();
 
-        // 2. Traemos todas las reservas desde el microservicio de la compañera vía Feign
+        // 2. Traemos todas las reservas históricas
         List<ReservaDTO> reservas = reservaClient.listarTodasLasReservas();
 
-        // 3. Filtramos los IDs de las habitaciones que tienen reservas registradas
-        List<Long> idsOcupados = reservas.stream()
+        // 3. 🔥 CORRECCIÓN: Filtramos SÓLO los IDs de habitaciones que tengan reservas realmente "ACTIVAS"
+        List<Long> idsRealmenteOcupados = reservas.stream()
+                .filter(r -> "ACTIVA".equalsIgnoreCase(r.getEstado())) // 👈 Ignoramos COMPLETADAS y CANCELADAS
                 .map(ReservaDTO::getIdHabitacion)
                 .toList();
 
-        // 4. Recorremos tus habitaciones y mutamos el atributo estado en el aire
+        // 4. Recorremos tus habitaciones y mutamos el atributo según la realidad actual
         for (Habitacion hab : habitaciones) {
-            if (idsOcupados.contains(hab.getId())) {
+            if (idsRealmenteOcupados.contains(hab.getId())) {
                 hab.setEstado("OCUPADA");
             } else {
                 hab.setEstado("DISPONIBLE");
@@ -139,8 +150,12 @@ public class HabitacionService {
                     .filter(r -> r.getIdHabitacion().equals(hab.getId()))
                     .toList();
 
-            // 🔥 LÓGICA DE ESTADO: Si tiene reservas pasa a OCUPADA, si no, DISPONIBLE
-            if (!reservasDeEstaHab.isEmpty()) {
+// 🔥 EL ARREGLO: Evaluamos si hay al menos UNA reserva que esté "ACTIVA"
+            boolean tieneReservaActiva = reservasDeEstaHab.stream()
+                    .anyMatch(r -> "ACTIVA".equalsIgnoreCase(r.getEstado()));
+
+// 2. Si tiene una reserva activa, se ocupa. Si está cancelada (o vacía), queda DISPONIBLE.
+            if (tieneReservaActiva) {
                 hab.setEstado("OCUPADA");
             } else {
                 hab.setEstado("DISPONIBLE");
@@ -155,6 +170,19 @@ public class HabitacionService {
         }
 
         return resultado;
+    }
+    public void eliminarHabitacion(Long idHabitacion) {
+        log.info("Intentando eliminar la habitación con ID: {}", idHabitacion);
+
+        // 1. Validamos si existe antes de borrar
+        if (!habitacionRepository.existsById(idHabitacion)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND,
+                    "No se puede eliminar: La habitación con ID " + idHabitacion + " no existe."
+            );
+        }
+
+        habitacionRepository.deleteById(idHabitacion);
     }
 
 }

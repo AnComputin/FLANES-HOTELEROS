@@ -64,4 +64,10 @@ public class UsuarioService {
                 .map(user -> user.getPassword().equals(password)) // Comparamos clave
                 .orElse(false); // Si no existe, devolvemos falso
     }
+    public Usuario buscarPorId(Long id) {
+        return usuarioRepository.findById(id)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Usuario no encontrado"
+                ));
+    }
 }

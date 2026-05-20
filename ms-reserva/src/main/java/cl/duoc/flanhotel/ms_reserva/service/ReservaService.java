@@ -1,40 +1,105 @@
 package cl.duoc.flanhotel.ms_reserva.service;
 
+import cl.duoc.flanhotel.ms_reserva.config.HabitacionFeignClient;
+import cl.duoc.flanhotel.ms_reserva.config.UsuarioFeignClient;
+import cl.duoc.flanhotel.ms_reserva.config.FacturaClient; // 👈 Asegúrate de que esta ruta apunte a tu FacturaClient
 import cl.duoc.flanhotel.ms_reserva.dto.ReservaDTO;
+import cl.duoc.flanhotel.ms_reserva.dto.UsuarioCompartidoDTO;
 import cl.duoc.flanhotel.ms_reserva.entidad.Reserva;
 import cl.duoc.flanhotel.ms_reserva.repository.ReservaRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+// 🌟 IMPORTS REQUERIDOS PARA EL CHECKOUT Y FACTURACIÓN:
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.time.temporal.ChronoUnit;
 
-@Slf4j // Activa logs
+@Slf4j
 @Service
 public class ReservaService {
 
     @Autowired
     private ReservaRepository reservaRepository;
+    @Autowired
+    private UsuarioFeignClient usuarioFeignClient;
+    @Autowired
+    private HabitacionFeignClient habitacionFeignClient;
+    @Autowired
+    private FacturaClient facturaClient; // 👈 Inyectamos el cliente para conectar con ms_facturacion
 
     public Reserva crearReserva(ReservaDTO dto) {
-        log.info("Iniciando proceso para crear una reserva para el cliente: {}", dto.getNombreCliente());
+        log.info("Iniciando proceso para crear una reserva...");
+        java.time.LocalDate hoy = java.time.LocalDate.now();
 
-        // Mapeo: Pasamos los datos del DTO (mensajero) a la Entidad (base de datos)
+        if (dto.getNombreQuienReserva() == null || dto.getNombreQuienReserva().trim().isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "El campo 'nombreQuienReserva' es obligatorio."
+            );
+        }
+        if (dto.getFechaInicio().isBefore(hoy)) {
+            log.warn("Error de fechas: Intento de reserva en el pasado ({})", dto.getFechaInicio());
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "No puedes realizar una reserva en una fecha que ya pasó."
+            );
+        }
+        if (!dto.getFechaFin().isAfter(dto.getFechaInicio())) {
+            log.warn("Error de fechas: Fecha fin ({}) no es posterior a la de inicio ({})", dto.getFechaFin(), dto.getFechaInicio());
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "La fecha de salida debe ser obligatoriamente posterior a la fecha de entrada."
+            );
+        }
+
+        UsuarioCompartidoDTO usuarioReal;
+        try {
+            usuarioReal = usuarioFeignClient.obtenerUsuarioPorId(dto.getIdCliente());
+        } catch (Exception e) {
+            log.error("Error al buscar usuario en ms_auth: {}", e.getMessage());
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "El idCliente " + dto.getIdCliente() + " no existe en el sistema de usuarios."
+            );
+        }
+
+        dto.setNombreCliente(usuarioReal.getUsername());
+
+        List<Reserva> todasLasActivas = reservaRepository.findByEstado("ACTIVA");
+        boolean hayTraslape = todasLasActivas.stream()
+                .filter(r -> r.getIdHabitacion().equals(dto.getIdHabitacion()))
+                .anyMatch(r -> dto.getFechaInicio().isBefore(r.getFechaFin()) &&
+                        dto.getFechaFin().isAfter(r.getFechaInicio()));
+
+        if (hayTraslape) {
+            log.warn("Intento de reserva fallido: La habitación {} ya está ocupada.", dto.getIdHabitacion());
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "La habitación ya se encuentra reservada en esas fechas.");
+        }
+
         Reserva reserva = new Reserva();
         reserva.setIdCliente(dto.getIdCliente());
         reserva.setIdHabitacion(dto.getIdHabitacion());
         reserva.setFechaInicio(dto.getFechaInicio());
         reserva.setFechaFin(dto.getFechaFin());
-
-        // 1. 🔥 Cambiamos de "PENDIENTE" a "ACTIVA" para que afecte de inmediato la disponibilidad
         reserva.setEstado("ACTIVA");
-
-        // 2. 🔥 Guardamos el nombre que viene desde el JSON de Postman
         reserva.setNombreCliente(dto.getNombreCliente());
+        reserva.setNombreQuienReserva(dto.getNombreQuienReserva());
 
         Reserva guardada = reservaRepository.save(reserva);
+        log.info("Reserva guardada exitosamente con ID: {}", guardada.getId());
 
-        log.info("Reserva guardada exitosamente con ID: {} para el cliente: {}", guardada.getId(), guardada.getNombreCliente());
+        try {
+            habitacionFeignClient.actualizarEstadoHabitacion(dto.getIdHabitacion(), "OCUPADA");
+            log.info("Estado de la habitación {} actualizado a 'OCUPADA' con éxito.", dto.getIdHabitacion());
+        } catch (Exception e) {
+            log.error("No se pudo actualizar el estado de la habitación en ms_habitacion: {}", e.getMessage());
+        }
+
         return guardada;
     }
 
@@ -43,34 +108,95 @@ public class ReservaService {
         return reservaRepository.findAll();
     }
 
-    // Metodo: Busca una reserva por su ID y actualiza su estado
-    public Reserva actualizarEstado(Long id, String nuevoEstado) {
-
-        // 1. Busca la reserva en la base de datos usando el ID. Si no existe, lanza un error.
-        Reserva reserva = reservaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Reserva no encontrada con el ID: " + id));
-
-        // 2. Modifica el estado antiguo con el nuevo texto recibido.
-        reserva.setEstado(nuevoEstado);
-
-        // 3. Guarda los cambios actualizados en la base de datos y los retorna.
-        return reservaRepository.save(reserva);
-    }
-
-    // Metodo: Busca una reserva por su ID y la elimina físicamente de la base de datos
     public void eliminarReserva(Long id) {
-
-        // 1. Verifica si la reserva existe antes de intentar borrarla. Si no está, lanza un error.
         if (!reservaRepository.existsById(id)) {
             throw new RuntimeException("No se puede eliminar. Reserva no encontrada con el ID: " + id);
         }
-
-        // 2. Ejecuta la orden de borrado en la base de datos (DELETE FROM reservas WHERE id = ...).
         reservaRepository.deleteById(id);
+        habitacionFeignClient.actualizarEstadoHabitacion(id, "DISPONIBLE");
     }
+
     public List<Reserva> listarPorHabitacionId(Long idHabitacion) {
-        log.info("Servicio: Buscando reservas asociadas a la habitación ID: {}", idHabitacion);
-        // Aquí llamamos al método corregido del repositorio
-        return reservaRepository.findByIdHabitacion(idHabitacion);
+        log.info("Servicio: Buscando reservas para la habitación ID: {}", idHabitacion);
+        List<Reserva> todas = reservaRepository.findAll();
+        return todas.stream()
+                .filter(r -> r.getIdHabitacion().equals(idHabitacion))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public List<Reserva> listarReservasActivas() {
+        log.info("Buscando todas las reservas con estado ACTIVA en la base de datos");
+        return reservaRepository.findByEstado("ACTIVA");
+    }
+
+    public Reserva cancelarReserva(Long idReserva) {
+        Reserva reserva = reservaRepository.findById(idReserva)
+                .orElseThrow(() -> new RuntimeException("No se encontró la reserva con ID: " + idReserva));
+
+        reserva.setEstado("CANCELADA");
+        log.info("La reserva ID {} ha sido CANCELADA", idReserva);
+        return reservaRepository.save(reserva);
+    }
+
+    public Reserva procesarCheckOut(Long idReserva) {
+        log.info("Procesando Check-Out con nombres de parámetros corregidos para Reserva ID: {}", idReserva);
+
+        // 1. Buscamos la reserva
+        Reserva reserva = reservaRepository.findById(idReserva)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND,
+                        "Error: No existe ninguna reserva registrada con el ID: " + idReserva));
+
+        // Si existe, continúa con el flujo normal...
+        if (!"ACTIVA".equalsIgnoreCase(reserva.getEstado())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "La reserva no está ACTIVA.");
+        }
+
+        // 2. Pedimos los datos de la habitación (para la matemática)
+        Double precioNoche = 50000.0;
+        try {
+            Map<String, Object> hab = habitacionFeignClient.obtenerHabitacionPorId(reserva.getIdHabitacion());
+            if (hab != null && hab.get("precioNoche") != null) {
+                precioNoche = Double.valueOf(hab.get("precioNoche").toString());
+            }
+        } catch (Exception e) {
+            log.error("No se pudo obtener el precio de ms_habitacion, usando por defecto: {}", precioNoche);
+        }
+
+        // 3. Calculamos noches y monto total
+        long noches = ChronoUnit.DAYS.between(reserva.getFechaInicio(), reserva.getFechaFin());
+        if (noches <= 0) noches = 1;
+        Double montoTotalCalculado = noches * precioNoche;
+
+        // 4. 🔥 LIBERAMOS LA HABITACIÓN (Usando el método exacto de tu FeignClient)
+        try {
+            // Le pasamos el ID de la habitación de la reserva, y el texto "DISPONIBLE"
+            habitacionFeignClient.actualizarEstadoHabitacion(reserva.getIdHabitacion(), "DISPONIBLE");
+            log.info("🚀 ÉXITO: Orden enviada a ms_habitacion para cambiar ID {} a DISPONIBLE.", reserva.getIdHabitacion());
+        } catch (Exception e) {
+            // Si hay un error aquí, imprimimos toda la traza para saber el motivo real (404, 400, etc.)
+            log.error("❌ ERROR CRÍTICO al liberar habitación: {}", e.getMessage());
+        }
+
+        // 5. ARCHIVAMOS LA RESERVA
+        reserva.setEstado("COMPLETADA");
+        Reserva reservaGuardada = reservaRepository.save(reserva);
+        log.info("🚀 ÉXITO: Reserva ID {} guardada como COMPLETADA.", idReserva);
+
+        // 6. AL FINAL: Enviamos la factura
+        Map<String, Object> facturaBody = new HashMap<>();
+        facturaBody.put("idReserva", reserva.getId());
+        facturaBody.put("montoTotal", montoTotalCalculado);
+        facturaBody.put("estadoPago", "PAGADO");
+
+        try {
+            facturaClient.enviarFacturaANueva(facturaBody);
+            log.info("Factura enviada con éxito a ms_facturacion.");
+        } catch (Exception e) {
+            log.error("⚠️ Advertencia controlada: ms_facturacion rechazó la factura. Pero tu flujo base ya terminó.");
+        }
+
+        return reservaGuardada;
     }
 }

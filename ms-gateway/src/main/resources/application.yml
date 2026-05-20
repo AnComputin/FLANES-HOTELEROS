@@ -29,4 +29,4 @@ spring:
         - id: facturacion-service
           uri: http://localhost:8084
           predicates:
-            - Path=/api/facturacion/**
+            - Path=/api/facturas/**

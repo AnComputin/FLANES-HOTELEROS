@@ -11,6 +11,7 @@ public class Factura {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @com.fasterxml.jackson.annotation.JsonProperty("idFactura")
     private Long id;
 
     @Column(name = "id_reserva", nullable = false)

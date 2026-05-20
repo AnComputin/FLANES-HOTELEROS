@@ -9,4 +9,5 @@ public interface FacturaService {
     Factura obtenerPorId(Long id);
     Factura obtenerPorIdReserva(Long idReserva);
     Factura cambiarEstadoPago(Long id, String nuevoEstado);
+
 }

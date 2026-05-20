@@ -10,6 +10,7 @@ public class Usuario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @com.fasterxml.jackson.annotation.JsonProperty("idUsuario")
     private Long id;
 
     @Column(nullable = false, unique = true)

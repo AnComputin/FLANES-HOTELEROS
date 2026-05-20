@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface HabitacionRepository extends JpaRepository<Habitacion, Long> {
     // Aquí podrías agregar búsquedas personalizadas después, como buscar por número
+    boolean existsByNumero(String numero);
 }
