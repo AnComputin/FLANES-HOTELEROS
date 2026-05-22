@@ -28,7 +28,7 @@ public class ReservaService {
     @Autowired
     private HabitacionFeignClient habitacionFeignClient;
     @Autowired
-    private FacturaClient facturaClient; // 👈 Inyectamos el cliente para conectar con ms_facturacion
+    private FacturaClient facturaClient; // Inyectamos el cliente para conectar con ms_facturacion
 
     public Reserva crearReserva(ReservaDTO dto) {
         log.info("Iniciando proceso para crear una reserva...");

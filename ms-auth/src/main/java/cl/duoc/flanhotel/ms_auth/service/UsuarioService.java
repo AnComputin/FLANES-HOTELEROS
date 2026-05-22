@@ -55,6 +55,16 @@ public class UsuarioService {
 
     // Metodo 4: ELIMINAR
     public void eliminarUsuario(Long id) {
+        // 1. Validar si el usuario NO existe en la base de datos
+        if (!usuarioRepository.existsById(id)) {
+            // Si no existe, frenamos el flujo de inmediato y lanzamos un error 404
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND,
+                    "Error: No se puede eliminar porque el Usuario con ID " + id + " no existe."
+            );
+        }
+
+        // 2. Si pasa la validación, recién ahí lo borramos
         usuarioRepository.deleteById(id);
     }
 

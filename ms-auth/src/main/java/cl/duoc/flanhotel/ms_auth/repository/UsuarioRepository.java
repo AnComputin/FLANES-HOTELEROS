@@ -9,6 +9,6 @@ import java.util.Optional;
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
-    // Este nombre de método es el que el Service busca para que no de error
+    // Este nombre de metodo es el que el Service busca para que no de error
     Optional<Usuario> findByUsername(String username);
 }

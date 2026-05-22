@@ -1,5 +1,6 @@
 package cl.duoc.flanhotel.ms_reserva.controller;
 
+import cl.duoc.flanhotel.ms_reserva.config.HabitacionFeignClient;
 import cl.duoc.flanhotel.ms_reserva.dto.ReservaDTO;
 import cl.duoc.flanhotel.ms_reserva.entidad.Reserva;
 import cl.duoc.flanhotel.ms_reserva.service.ReservaService;
@@ -26,6 +27,8 @@ public class ReservaController {
 
     @Autowired
     private FacturaClient facturaClient; // Cliente Feign inyectado de forma limpia
+    @Autowired
+    private HabitacionFeignClient habitacionFeignClient;
 
     // Crear reserva
     @PostMapping("/crear")
@@ -52,10 +55,25 @@ public class ReservaController {
     }
 
     @GetMapping("/habitacion/{id}")
-    public ResponseEntity<List<Reserva>> obtenerReservasPorHabitacion(@PathVariable Long id) {
-        log.info("Controlador: Petición de ms-habitacion para buscar reservas de la habitación ID: {}", id);
-        List<Reserva> lista = reservaService.listarPorHabitacionId(id);
-        return ResponseEntity.ok(lista);
+    public ResponseEntity<?> obtenerReservasPorHabitacion(@PathVariable Long id) {
+        log.info("Controlador: Buscando habitación y sus reservas para el ID: {}", id);
+
+        // 1. Buscamos las reservas locales de esa habitación
+        List<Reserva> listaReservas = reservaService.listarPorHabitacionId(id);
+
+        // 2. Traemos los datos de la habitación desde el ms-habitacion usando Feign
+        Map<String, Object> datosHabitacion = null;
+        try {
+            datosHabitacion = habitacionFeignClient.obtenerHabitacionPorId(id);
+        } catch (Exception e) {
+            log.error("No se pudieron obtener los detalles de la habitación desde ms-habitacion: {}", e.getMessage());
+        }
+
+        // 3. Juntamos ambos en el DTO para que Postman pinte la estructura que quieres
+        cl.duoc.flanhotel.ms_reserva.dto.HabitacionConReservasDTO respuesta =
+                new cl.duoc.flanhotel.ms_reserva.dto.HabitacionConReservasDTO(datosHabitacion, listaReservas);
+
+        return ResponseEntity.ok(respuesta);
     }
 
     @GetMapping("/activas")
@@ -92,7 +110,7 @@ public class ReservaController {
             dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
             dataSource.setUrl("jdbc:mysql://localhost:3306/db_hotel_facturacion?useSSL=false&serverTimezone=UTC");
             dataSource.setUsername("root");
-            dataSource.setPassword("root");
+            dataSource.setPassword("flan");
 
             org.springframework.jdbc.core.JdbcTemplate jdbcTemplate = new org.springframework.jdbc.core.JdbcTemplate(dataSource);
 
