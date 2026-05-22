@@ -65,6 +65,18 @@ public class HabitacionController {
     public ResponseEntity<List<Map<String, Object>>> listarTodasConReservas() {
         return ResponseEntity.ok(habitacionService.listarTodasConReservas());
     }
+    @GetMapping("/buscar/{id}")
+    public ResponseEntity<Habitacion> buscarPorId(@PathVariable Long id) {
+        log.info("Controlador Habitaciones: Buscando habitación con ID: {}", id);
+
+        // Buscamos la habitación en el repositorio. Si no existe, lanza un 404 de inmediato.
+        Habitacion habitacion = habitacionRepository.findById(id)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Habitación no encontrada con ID: " + id));
+
+        // Si existe, la devuelve con un HTTP 200 OK
+        return ResponseEntity.ok(habitacion);
+    }
     @org.springframework.web.bind.annotation.ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
     public org.springframework.http.ResponseEntity<java.util.Map<String, String>> manejarErrorValidacion(org.springframework.web.server.ResponseStatusException ex) {
 

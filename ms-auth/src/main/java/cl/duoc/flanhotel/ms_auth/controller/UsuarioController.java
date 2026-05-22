@@ -72,4 +72,33 @@ public class UsuarioController {
         Usuario usuario = usuarioService.buscarPorId(id); // Asegúrate de que tu servicio tenga este método
         return ResponseEntity.ok(usuario);
     }
+    @org.springframework.web.bind.annotation.ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<java.util.Map<String, String>> manejarDatosDuplicados(org.springframework.dao.DataIntegrityViolationException ex) {
+        java.util.Map<String, String> respuesta = new java.util.HashMap<>();
+        respuesta.put("estado", "ERROR_DE_VALIDACION");
+
+        // Obtenemos la causa raíz que viene directo de los motores de Hibernate / MySQL
+        String mensajeError = ex.getMostSpecificCause().getMessage();
+
+        // Si el error es efectivamente una entrada duplicada (Código 1062 de MySQL)
+        if (mensajeError != null && mensajeError.contains("Duplicate entry")) {
+
+            // Evaluamos de forma inteligente la palabra clave del campo que falló en la BD
+            if (mensajeError.contains("correo") || mensajeError.contains("email")) {
+                respuesta.put("mensaje", "El correo electrónico ya se encuentra registrado por otro usuario.");
+            } else if (mensajeError.contains("username") || mensajeError.contains("usuario") || mensajeError.contains("nombre")) {
+                respuesta.put("mensaje", "El nombre de usuario ya está en uso. Por favor, elige otro.");
+            } else if (mensajeError.contains("rut") || mensajeError.contains("dni")) {
+                respuesta.put("mensaje", "El documento de identidad ingresado ya pertenece a una cuenta.");
+            } else {
+                respuesta.put("mensaje", "No se pudo completar el registro: Uno de los campos ingresados ya existe.");
+            }
+
+        } else {
+            respuesta.put("mensaje", "Error de consistencia de datos al intentar procesar el usuario.");
+        }
+
+        // Devolvemos un código de estado 400 (Bad Request) con el JSON informativo
+        return ResponseEntity.badRequest().body(respuesta);
+    }
 }

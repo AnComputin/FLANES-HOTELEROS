@@ -37,7 +37,7 @@ public class ReservaService {
         if (dto.getNombreQuienReserva() == null || dto.getNombreQuienReserva().trim().isEmpty()) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.BAD_REQUEST,
-                    "El campo 'nombreQuienReserva' es obligatorio."
+                    "El nombre de quien reserva es obligatorio."
             );
         }
         if (dto.getFechaInicio().isBefore(hoy)) {
@@ -52,6 +52,25 @@ public class ReservaService {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.BAD_REQUEST,
                     "La fecha de salida debe ser obligatoriamente posterior a la fecha de entrada."
+            );
+        }
+        try {
+            log.info("Consultando disponibilidad física de la habitación ID: {}", dto.getIdHabitacion());
+
+            // Esto ahora llamará de forma interna a http://localhost:8082/api/habitaciones/buscar/{id}
+            Map<String, Object> habitacionExistente = habitacionFeignClient.obtenerHabitacionPorId(dto.getIdHabitacion());
+
+            if (habitacionExistente == null || habitacionExistente.isEmpty()) {
+                throw new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.BAD_REQUEST,
+                        "La habitación seleccionada no está registrada en el sistema."
+                );
+            }
+        } catch (Exception e) {
+            log.error("Error al buscar habitación en ms_habitacion: {}", e.getMessage());
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "No se puede realizar la reserva porque la habitación con ID " + dto.getIdHabitacion() + " no existe o fue eliminada."
             );
         }
 
@@ -138,6 +157,7 @@ public class ReservaService {
         return reservaRepository.save(reserva);
     }
 
+    // 🌟 QUITAMOS EL @Transactional PARA QUE NO TRANQUE LA BASE DE DATOS DURANTE LA LLAMADA DE FEIGN
     public Reserva procesarCheckOut(Long idReserva) {
         log.info("Procesando Check-Out con nombres de parámetros corregidos para Reserva ID: {}", idReserva);
 
@@ -147,7 +167,6 @@ public class ReservaService {
                         org.springframework.http.HttpStatus.NOT_FOUND,
                         "Error: No existe ninguna reserva registrada con el ID: " + idReserva));
 
-        // Si existe, continúa con el flujo normal...
         if (!"ACTIVA".equalsIgnoreCase(reserva.getEstado())) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.BAD_REQUEST, "La reserva no está ACTIVA.");
@@ -169,33 +188,20 @@ public class ReservaService {
         if (noches <= 0) noches = 1;
         Double montoTotalCalculado = noches * precioNoche;
 
-        // 4. 🔥 LIBERAMOS LA HABITACIÓN (Usando el método exacto de tu FeignClient)
+        // 4. LIBERAMOS LA HABITACIÓN
         try {
-            // Le pasamos el ID de la habitación de la reserva, y el texto "DISPONIBLE"
             habitacionFeignClient.actualizarEstadoHabitacion(reserva.getIdHabitacion(), "DISPONIBLE");
             log.info("🚀 ÉXITO: Orden enviada a ms_habitacion para cambiar ID {} a DISPONIBLE.", reserva.getIdHabitacion());
         } catch (Exception e) {
-            // Si hay un error aquí, imprimimos toda la traza para saber el motivo real (404, 400, etc.)
             log.error("❌ ERROR CRÍTICO al liberar habitación: {}", e.getMessage());
         }
 
         // 5. ARCHIVAMOS LA RESERVA
+        // Al no haber @Transactional a nivel de método, el .saveAndFlush() impacta de inmediato y libera el registro de forma permanente en MySQL
         reserva.setEstado("COMPLETADA");
-        Reserva reservaGuardada = reservaRepository.save(reserva);
-        log.info("🚀 ÉXITO: Reserva ID {} guardada como COMPLETADA.", idReserva);
+        Reserva reservaGuardada = reservaRepository.saveAndFlush(reserva);
+        log.info("🚀 ÉXITO: Reserva ID {} guardada y liberada en la base de datos.", idReserva);
 
-        // 6. AL FINAL: Enviamos la factura
-        Map<String, Object> facturaBody = new HashMap<>();
-        facturaBody.put("idReserva", reserva.getId());
-        facturaBody.put("montoTotal", montoTotalCalculado);
-        facturaBody.put("estadoPago", "PAGADO");
-
-        try {
-            facturaClient.enviarFacturaANueva(facturaBody);
-            log.info("Factura enviada con éxito a ms_facturacion.");
-        } catch (Exception e) {
-            log.error("⚠️ Advertencia controlada: ms_facturacion rechazó la factura. Pero tu flujo base ya terminó.");
-        }
 
         return reservaGuardada;
     }
