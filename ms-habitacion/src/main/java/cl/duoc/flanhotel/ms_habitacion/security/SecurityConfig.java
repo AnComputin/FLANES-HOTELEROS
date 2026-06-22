@@ -21,7 +21,12 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // LIBERAMOS LAS RUTAS DE SWAGGER AQUÍ
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+
+                        // Mantenemos tu ruta pública existente
                         .requestMatchers(HttpMethod.PUT, "/api/habitaciones/*/estado").permitAll()
+
                         .anyRequest().authenticated() // Toda petición necesita token
                 )
                 // AQUÍ AGREGAMOS EL FILTRO: Le decimos que ejecute nuestro JwtFilter ANTES del filtro por defecto

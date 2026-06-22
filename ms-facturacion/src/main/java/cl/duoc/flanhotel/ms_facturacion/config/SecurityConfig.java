@@ -16,9 +16,13 @@ public class SecurityConfig {
                 // 1. Deshabilitamos CSRF por completo (Obligatorio para recibir POSTs)
                 .csrf(csrf -> csrf.disable())
 
-                // 2. Dejamos todos los endpoints 100% PÚBLICOS para el testeo de los microservicios
+                // 2. Configuramos las rutas
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll() // 👈 Cambiamos a permitAll() total para asegurar el flujo
+                        // Dejamos Swagger público siempre, pase lo que pase
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+
+                        // Dejamos el resto público para sus testeos actuales
+                        .anyRequest().permitAll()
                 )
 
                 // 3. Desactivamos el formulario de login básico que causaba el error 401

@@ -1,0 +1,15 @@
+server:
+  port: 8761 # Puerto estándar por defecto para Eureka
+
+spring:
+  application:
+    name: ms-eureka
+
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    register-with-eureka: false # Evita que el servidor se registre a sí mismo
+    fetch-registry: false        # Evita que intente buscar otros servidores Eureka
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/

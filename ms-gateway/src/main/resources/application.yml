@@ -7,26 +7,36 @@ spring:
   cloud:
     gateway:
       routes:
-        # Ruta para tu ms_auth
+        # Ruta para tu ms-auth
         - id: auth-service
-          uri: http://localhost:8081
+          uri: lb://ms-auth
           predicates:
             - Path=/api/usuarios/**
 
-        # Ruta para tu ms_habitacion
+        # Ruta para el ms-habitacion (El de Alejandra)
         - id: habitacion-service
-          uri: http://localhost:8082
+          uri: lb://ms-habitacion
           predicates:
             - Path=/api/habitaciones/**
 
-        # Ruta para el ms_reserva (El de Anaís)
+        # Ruta para el ms-reserva (El de Anaís)
         - id: reserva-service
-          uri: http://localhost:8083
+          uri: lb://ms-reserva
           predicates:
             - Path=/api/reservas/**
 
-        # Ruta para el ms_facturacion (El de Anaís)
+        # Ruta para el ms-facturacion (El de Anaís)
         - id: facturacion-service
-          uri: http://localhost:8084
+          uri: lb://ms-facturacion
           predicates:
             - Path=/api/facturas/**
+
+# ==========================================
+# CONFIGURACIÓN DE EUREKA CLIENT
+# ==========================================
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true

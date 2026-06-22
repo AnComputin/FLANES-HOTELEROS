@@ -31,8 +31,9 @@ public class SecurityConfig {
 
                 // 3. Configuramos las reglas de acceso
                 .authorizeHttpRequests(auth -> auth
-                        // EJEMPLO: Si tienes alguna ruta pública en este microservicio, se pone aquí:
-                        // .requestMatchers("/api/publica/**").permitAll()
+
+                        // LIBERAMOS LAS RUTAS DE SWAGGER AQUÍ
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
                         // Exigimos que cualquier otra petición esté autenticada (tenga un token válido)
                         .anyRequest().authenticated()

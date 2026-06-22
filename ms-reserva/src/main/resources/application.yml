@@ -1,0 +1,35 @@
+
+server:
+  port: 8083
+
+spring:
+  application:
+    name: ms-reserva
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/db_hotel_reserva?useSSL=false&serverTimezone=UTC
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    facturacion:
+      url: jdbc:mysql://localhost:3306/db_hotel_facturacion?useSSL=false&serverTimezone=UTC
+
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 1
+
+  web:
+    error:
+      include-message: always
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
