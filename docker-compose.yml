@@ -1,0 +1,90 @@
+services:
+  # 1. Servidor Eureka
+  ms-eureka:
+    image: mseureka-img
+    build: ./ms-eureka
+    container_name: contenedor-eureka
+    ports:
+      - "8761:8761"
+
+  # 2. API Gateway
+  ms-gateway:
+    image: msgeway-img
+    build: ./ms-gateway
+    container_name: contenedor-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_HOST=ms-eureka
+    depends_on:
+      - ms-eureka
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # 3. Microservicio de Autenticación
+  ms-auth:
+    image: msauth-img
+    build: ./ms-auth
+    container_name: contenedor-auth
+    ports:
+      - "8081:8081"
+    environment:
+      - EUREKA_HOST=ms-eureka
+      - DB_HOST=host.docker.internal
+      - DB_PASSWORD=holaflan
+      - DB_USER=root # <--- LE INYECTAMOS TU CLAVE LOCAL
+    depends_on:
+      - ms-eureka
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # 4. Microservicio de Habitaciones
+  ms-habitacion:
+    image: mshabitacion-img
+    build: ./ms-habitacion
+    container_name: contenedor-habitacion
+    ports:
+      - "8082:8082"
+    environment:
+      - EUREKA_HOST=ms-eureka
+      - DB_HOST=host.docker.internal
+      - DB_PASSWORD=holaflan
+      - DB_USER=root # <--- LE INYECTAMOS TU CLAVE LOCAL
+    depends_on:
+      - ms-eureka
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # 5. Tu Microservicio de Reservas
+  ms-reserva:
+    image: ms-reserva
+    build: ./ms-reserva
+    container_name: ms-reserva
+    ports:
+      - "8083:8083"
+    environment:
+      - EUREKA_HOST=ms-eureka
+      - DB_HOST=host.docker.internal
+      - DB_PASSWORD=holaflan
+      - DB_USER=root
+    depends_on:
+      - ms-eureka              
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # 6. Microservicio de Facturación
+  ms-facturacion:
+    image: msfacturacion-img
+    build: ./ms-facturacion
+    container_name: contenedor-facturacion
+    ports:
+      - "8084:8084"
+    environment:
+      - EUREKA_HOST=ms-eureka
+      - DB_HOST=host.docker.internal
+      - DB_PASSWORD=holaflan
+      - DB_USER=root # <--- LE INYECTAMOS TU CLAVE LOCAL
+    depends_on:
+      - ms-eureka
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

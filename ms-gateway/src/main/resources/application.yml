@@ -1,0 +1,60 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ms-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: http://ms-auth:8081
+          predicates:
+            - Path=/api/usuarios/**, /v3/api-docs/ms-auth/**
+          filters:
+            - RewritePath=/v3/api-docs/ms-auth, /v3/api-docs
+
+        - id: habitacion-service
+          uri: http://ms-habitacion:8082
+          predicates:
+            - Path=/api/habitaciones/**, /v3/api-docs/ms-habitacion/**
+          filters:
+            - RewritePath=/v3/api-docs/ms-habitacion, /v3/api-docs
+
+        - id: reserva-service
+          uri: http://ms-reserva:8083
+          predicates:
+            - Path=/api/reservas/**, /v3/api-docs/ms-reserva/**
+          filters:
+            - RewritePath=/v3/api-docs/ms-reserva, /v3/api-docs
+
+        - id: facturacion-service
+          uri: http://ms-facturacion:8084
+          predicates:
+            - Path=/api/facturas/**, /v3/api-docs/ms-facturacion/**
+          filters:
+            - RewritePath=/v3/api-docs/ms-facturacion, /v3/api-docs
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:ms-eureka}:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: Microservicio Autenticación
+        url: /v3/api-docs/ms-auth
+      - name: Microservicio Habitaciones
+        url: /v3/api-docs/ms-habitacion
+      - name: Microservicio Reservas
+        url: /v3/api-docs/ms-reserva
+      - name: Microservicio Facturación
+        url: /v3/api-docs/ms-facturacion
+  api-docs:
+    enabled: true
+  use-management-port: false
+  webjars:
+    prefix: /webjars
