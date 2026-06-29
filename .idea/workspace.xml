@@ -1,16 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="0534f899-cd7e-4181-bc61-76fce8a8dc91" name="Changes" comment="" />
+    <list default="true" id="0534f899-cd7e-4181-bc61-76fce8a8dc91" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/ms-facturacion/src/main/java/cl/duoc/flanhotel/ms_facturacion/config/FeignClientConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ms-reserva/src/main/java/cl/duoc/flanhotel/ms_reserva/config/FeignClientConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ms-facturacion/src/main/java/cl/duoc/flanhotel/ms_facturacion/config/ReservaClient.java" beforeDir="false" afterPath="$PROJECT_DIR$/ms-facturacion/src/main/java/cl/duoc/flanhotel/ms_facturacion/config/ReservaClient.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ms-facturacion/src/main/java/cl/duoc/flanhotel/ms_facturacion/exception/FacturaNotFoundException.java" beforeDir="false" afterPath="$PROJECT_DIR$/ms-facturacion/src/main/java/cl/duoc/flanhotel/ms_facturacion/exception/FacturaNotFoundException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ms-facturacion/src/main/java/cl/duoc/flanhotel/ms_facturacion/service/FacturaService.java" beforeDir="false" afterPath="$PROJECT_DIR$/ms-facturacion/src/main/java/cl/duoc/flanhotel/ms_facturacion/service/FacturaService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ms-facturacion/src/main/java/cl/duoc/flanhotel/ms_facturacion/service/FacturaServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/ms-facturacion/src/main/java/cl/duoc/flanhotel/ms_facturacion/service/FacturaServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ms-reserva/src/main/java/cl/duoc/flanhotel/ms_reserva/config/HabitacionFeignClient.java" beforeDir="false" afterPath="$PROJECT_DIR$/ms-reserva/src/main/java/cl/duoc/flanhotel/ms_reserva/config/HabitacionFeignClient.java" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 3,
-  "fromUser": false
-}]]></component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 3,
+  &quot;fromUser&quot;: false
+}</component>
   <component name="ProjectId" id="3FgpP4V6kipjKJWmEzDIW3n7nqw" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -20,8 +32,11 @@
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false"
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true"
   }
 }]]></component>
   <component name="SharedIndexes">
@@ -41,5 +56,8 @@
       <updated>1782506546685</updated>
     </task>
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
   </component>
 </project>
